@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Learning OS (V27 Interactive)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Font: Sarabun (Official Thai Standard) -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f1f5f9; color: #1e293b; }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        
+        /* Chat Bubbles */
+        .chat-bubble-ai { 
+            background: #ffffff; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 0 18px 18px 18px; 
+            color: #334155; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03); 
+            line-height: 1.8; font-size: 16px; padding: 20px;
+        }
+        .chat-bubble-user { 
+            background: #3b82f6; 
+            color: #ffffff; 
+            border-radius: 18px 0 18px 18px; 
+            line-height: 1.8; font-size: 16px; padding: 16px 20px;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+        }
+        /* Markdown Styling */
+        .chat-bubble-ai strong { color: #1e40af; font-weight: 700; }
+        .chat-bubble-ai ul { list-style-type: disc; padding-left: 1.5em; margin: 0.5em 0; }
+        .chat-bubble-ai li { margin-bottom: 0.3em; }
+
+        /* Sidebar & Cards */
+        .course-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 10px; transition: all 0.2s; }
+        .course-card:hover { border-color: #3b82f6; transform: translateY(-1px); }
+        
+        .course-header { 
+            padding: 12px 16px; 
+            cursor: pointer; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            font-weight: 600; 
+            background: white;
+            transition: background-color 0.2s;
+        }
+        .course-header:hover { background-color: #f8fafc; }
+        
+        /* Chevron Animation */
+        .course-header i { transition: transform 0.3s ease; }
+        .course-header.active i { transform: rotate(180deg); color: #3b82f6; }
+        .course-header.active { background-color: #eff6ff; color: #1e40af; }
+
+        .course-body { 
+            max-height: 0; 
+            overflow: hidden; 
+            transition: max-height 0.3s ease-out; 
+            background: #f8fafc; 
+            border-top: 1px solid #f1f5f9;
+        }
+        .course-body.open { max-height: 500px; /* Approximate max height */ }
+        
+        /* Interactive Steps */
+        .step-item {
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #475569;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: all 0.15s;
+        }
+        .step-item:hover {
+            background-color: #e0f2fe;
+            color: #0369a1;
+            border-left-color: #3b82f6;
+            padding-left: 20px;
+        }
+
+        /* Quiz & Flashcard Styles */
+        .tool-card { background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .flashcard { border-left: 4px solid #f59e0b; }
+        
+        .quiz-option { display: block; padding: 10px; margin-top: 6px; border-radius: 8px; border: 2px solid #f1f5f9; cursor: pointer; transition: all 0.1s; }
+        .quiz-option:hover { background: #f8fafc; border-color: #cbd5e1; }
+        .quiz-option input:checked + span { font-weight: bold; color: #2563eb; }
+        .quiz-option.correct { background-color: #dcfce7; border-color: #22c55e; }
+        .quiz-option.wrong { background-color: #fee2e2; border-color: #ef4444; }
+
+        /* Animations */
+        .modal-enter { animation: modalIn 0.3s ease-out forwards; }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .typing-dot { animation: typing 1.4s infinite ease-in-out both; }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col text-sm md:text-base">
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 border border-white/20 modal-enter relative">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-white text-4xl font-bold shadow-lg">Ed</div>
+                <h2 class="text-2xl font-bold text-slate-800">เข้าสู่ระบบ</h2>
+                <p class="text-slate-500 mt-2">Learning OS V27 (Interactive)</p>
+            </div>
+            <div class="space-y-5">
+                <input type="text" id="userNameInput" class="w-full px-4 py-3.5 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none transition" placeholder="ชื่อเล่น">
+                <input type="password" id="apiKeyInput" class="w-full px-4 py-3.5 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none transition" placeholder="Gemini API Key (AIzaSy...)">
+                <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition shadow-lg mt-2">เริ่มใช้งาน 🚀</button>
+                <div class="text-center pt-2"><a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-xs text-blue-500 hover:underline">กดขอ Key ฟรีที่นี่</a></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Universal Input Modal -->
+    <div id="inputModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-xl shadow-xl p-6 w-96 modal-enter relative">
+            <button onclick="closeModal('inputModal')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+            <h3 class="font-bold text-lg text-slate-800 mb-4 flex items-center gap-2" id="modalTitle">...</h3>
+            <div class="space-y-3">
+                <input type="text" id="modalInput" class="w-full border p-2.5 rounded-lg text-sm focus:border-blue-500 outline-none" placeholder="ระบุหัวข้อ...">
+                <div id="modalFileUpload" class="hidden border-2 border-dashed border-slate-200 rounded-lg p-3 text-center cursor-pointer hover:bg-slate-50 transition" onclick="document.getElementById('modalFile').click()">
+                    <input type="file" id="modalFile" accept="image/*" class="hidden" onchange="handleModalFile(event)">
+                    <i class="fas fa-image text-slate-400 text-xl mb-1"></i>
+                    <p class="text-xs text-slate-500 truncate px-2" id="modalFileName">แนบรูป Slide / ชีทเรียน</p>
+                </div>
+                <button id="modalConfirmBtn" class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-bold shadow-md hover:bg-blue-700 transition mt-2">ตกลง ✨</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm z-20 sticky top-0">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-lg">Ed</div>
+            <div>
+                <h1 class="font-bold text-slate-800 text-lg leading-tight">Learning OS</h1>
+                <p class="text-[10px] text-blue-600 font-bold tracking-wide">V27 INTERACTIVE</p>
+            </div>
+        </div>
+        <div class="hidden md:flex items-center bg-slate-100 p-1 rounded-lg">
+            <button onclick="setTone('tutor')" class="tone-btn px-3 py-1 bg-white text-blue-600 shadow-sm rounded text-xs font-bold transition">🎓 ติวเตอร์</button>
+            <button onclick="setTone('friend')" class="tone-btn px-3 py-1 text-slate-500 hover:text-slate-700 rounded text-xs font-medium transition">😎 เพื่อนซี้</button>
+        </div>
+        <div class="flex items-center gap-3">
+            <p class="text-sm font-bold text-slate-700 hidden md:block" id="displayUserName">Guest</p>
+            <button onclick="logout()" class="text-[10px] text-red-500 hover:underline">ออก</button>
+            <div class="w-10 h-10 bg-blue-50 rounded-full border-2 border-white shadow-sm overflow-hidden p-1">
+                <img src="https://api.dicebear.com/7.x/notionists/svg?seed=User" class="rounded-full">
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        
+        <!-- LEFT SIDEBAR: Courses -->
+        <aside class="w-80 bg-white border-r border-slate-200 flex flex-col hidden md:flex z-10">
+            <div class="p-4 border-b border-slate-100">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">MY COURSES</h3>
+                    <button onclick="openModal('plan')" class="text-[10px] bg-slate-800 text-white px-3 py-1.5 rounded-full hover:bg-black transition shadow flex items-center gap-1"><i class="fas fa-plus"></i> เพิ่มวิชา</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="openModal('summary')" class="bg-blue-50 text-blue-700 p-2.5 rounded-xl text-xs font-bold hover:bg-blue-100 text-left transition flex items-center"><i class="fas fa-file-alt mr-2 text-lg"></i> สรุป</button>
+                    <button onclick="openModal('flashcard')" class="bg-yellow-50 text-yellow-700 p-2.5 rounded-xl text-xs font-bold hover:bg-yellow-100 text-left transition flex items-center"><i class="fas fa-bolt mr-2 text-lg"></i> Cards</button>
+                    <button onclick="openModal('mocktest')" class="bg-green-50 text-green-700 p-2.5 rounded-xl text-xs font-bold hover:bg-green-100 text-left transition flex items-center"><i class="fas fa-clipboard-check mr-2 text-lg"></i> Mock Test</button>
+                    <button onclick="openModal('plan')" class="bg-orange-50 text-orange-700 p-2.5 rounded-xl text-xs font-bold hover:bg-orange-100 text-left transition flex items-center"><i class="fas fa-map-marked-alt mr-2 text-lg"></i> แผนเรียน</button>
+                </div>
+            </div>
+            
+            <div id="courses-container" class="flex-1 overflow-y-auto p-3 bg-slate-50/50 space-y-2">
+                <div id="empty-courses" class="text-center mt-10 text-slate-400 text-sm opacity-60"><i class="fas fa-book-open text-3xl mb-2"></i><br>ยังไม่มีวิชาเรียน</div>
+            </div>
+        </aside>
+
+        <!-- CENTER: Chat -->
+        <main class="flex-1 flex flex-col bg-[#f8fafc] relative">
+            <div id="chatContainer" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 scroll-smooth">
+                <div class="flex gap-4 max-w-3xl mx-auto">
+                    <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white shrink-0 shadow-md"><i class="fas fa-robot"></i></div>
+                    <div class="chat-bubble-ai p-6 shadow-sm">
+                        <p class="font-bold text-lg text-slate-800 mb-2">สวัสดีครับ! V27 มาแล้วครับ 🛠️</p>
+                        <p class="text-slate-600">อัปเกรดตามที่ขอครับ:</p>
+                        <ul class="list-disc list-inside text-slate-500 text-sm mt-2 space-y-1">
+                            <li>ลูกศรหน้าวิชา <strong>หมุนได้</strong> และกดเปิด-ปิดง่ายขึ้น</li>
+                            <li><strong>หัวข้อย่อยกดได้แล้ว!</strong> ลองกดที่บทเรียนในแผนด้านซ้าย ผมจะเริ่มสอนทันที</li>
+                            <li>ระบบสอบและ Flashcard ยังครบเหมือนเดิม</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 bg-white border-t border-slate-200 shadow-sm">
+                <div class="max-w-3xl mx-auto relative flex items-end bg-white border-2 border-slate-200 rounded-2xl p-2 shadow-sm focus-within:border-blue-500 transition-colors">
+                    <div id="filePreview" class="hidden absolute bottom-14 left-0 bg-white p-2 rounded-lg border shadow-sm flex items-center gap-2"><img id="previewImg" class="h-8 w-8 rounded"><span id="fileName" class="text-xs"></span><button onclick="clearFile()" class="text-red-500">x</button></div>
+                    <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFile(event)">
+                    <button onclick="document.getElementById('fileInput').click()" class="p-3 text-slate-400 hover:text-blue-600 transition"><i class="fas fa-paperclip text-lg"></i></button>
+                    <textarea id="userInput" rows="1" class="w-full bg-transparent border-none focus:ring-0 text-slate-800 py-3 px-2 resize-none max-h-32 placeholder-slate-400 text-base" placeholder="พิมพ์คำถาม..."></textarea>
+                    <button onclick="sendMessage()" class="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-md transition transform active:scale-95"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </main>
+
+        <!-- RIGHT SIDEBAR: Tools & Scoreboard -->
+        <aside class="w-96 bg-white border-l border-slate-200 flex flex-col hidden lg:flex z-10">
+            <div class="flex border-b border-slate-200">
+                <button onclick="switchTab('tools')" id="btn-tools" class="flex-1 py-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600 bg-blue-50/50">Active Tools</button>
+                <button onclick="switchTab('scores')" id="btn-scores" class="flex-1 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-50">Scoreboard</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 bg-slate-50/30">
+                <!-- Tools Tab -->
+                <div id="tab-tools" class="space-y-4">
+                    <div id="tools-placeholder" class="text-center mt-20 text-slate-400 text-sm opacity-60"><i class="fas fa-toolbox text-3xl mb-2"></i><br>เครื่องมือจะแสดงที่นี่</div>
+                    <div id="active-tools-content" class="space-y-4"></div>
+                </div>
+                <!-- Scoreboard Tab -->
+                <div id="tab-scores" class="hidden space-y-3">
+                    <div id="scores-list" class="space-y-2"></div>
+                    <div id="empty-scores" class="text-center mt-10 text-slate-400 text-xs">ยังไม่มีคะแนนสอบ</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // --- STATE & CONFIG ---
+        let state = { 
+            user: localStorage.getItem("ed_user") || "", 
+            key: localStorage.getItem("ed_key") || "",
+            scores: JSON.parse(localStorage.getItem("ed_scores") || "[]"),
+            plans: JSON.parse(localStorage.getItem("ed_plans_v27") || "[]") // New Key to avoid conflict
+        };
+        const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=";
+        let currentTone = "tutor"; 
+        let currentActionType = "";
+        let currentQuizData = null; 
+
+        window.onload = () => {
+            if(!state.key || !state.user) document.getElementById('loginModal').classList.remove('hidden');
+            else { updateUI(); renderScores(); renderAllPlans(); }
+        };
+
+        // --- AUTH ---
+        function handleLogin() {
+            const u = document.getElementById('userNameInput').value.trim();
+            const k = document.getElementById('apiKeyInput').value.trim();
+            if(u && k.length > 5) {
+                localStorage.setItem("ed_user", u); localStorage.setItem("ed_key", k);
+                state.user = u; state.key = k;
+                document.getElementById('loginModal').classList.add('hidden');
+                updateUI();
+            } else alert("ข้อมูลไม่ครบ");
+        }
+        function logout() { if(confirm("ออกจากระบบ?")) { localStorage.clear(); location.reload(); } }
+        function updateUI() { document.getElementById('displayUserName').innerText = state.user; }
+
+        // --- MODAL LOGIC ---
+        let modalImg = null;
+        function openModal(type) {
+            currentActionType = type;
+            document.getElementById('modalTitle').innerText = {'plan':'สร้างแผนการเรียน','summary':'สรุปบทเรียน','flashcard':'สร้าง Flashcard','mocktest':'สร้างข้อสอบ (Mock Test)'}[type];
+            document.getElementById('modalInput').value = '';
+            document.getElementById('modalInput').placeholder = type==='plan'?'ชื่อวิชา...':'หัวข้อที่จะสอบ...';
+            document.getElementById('modalFileUpload').classList.remove('hidden');
+            document.getElementById('inputModal').classList.remove('hidden');
+            document.getElementById('modalInput').focus();
+        }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function handleModalFile(e) {
+            const f = e.target.files[0]; if(!f)return;
+            const r = new FileReader(); r.onload=(ev)=>{document.getElementById('modalFileName').innerText=f.name; document.getElementById('modalFileName').classList.add('text-blue-600'); modalImg=ev.target.result.split(',')[1];}; r.readAsDataURL(f);
+        }
+        
+        document.getElementById('modalConfirmBtn').onclick = () => {
+            const txt = document.getElementById('modalInput').value;
+            if(!txt) return alert("ระบุข้อมูลก่อนครับ");
+            closeModal('inputModal');
+            
+            let prompt = "";
+            let showHidden = true;
+            
+            if (currentActionType === 'plan') prompt = `สร้างแผนการเรียนวิชา "${txt}" ขอเป็น JSON format: {"type":"map", "subject":"${txt}", "steps":["บทที่ 1...", "บทที่ 2..."]} เท่านั้น`;
+            else if (currentActionType === 'summary') { prompt = `สรุปบทเรียนเรื่อง "${txt}" ให้หน่อย`; showHidden = false; }
+            else if (currentActionType === 'flashcard') prompt = `สร้าง Flashcard เรื่อง "${txt}" 5 ใบ ขอเป็น JSON format: {"type":"flashcard", "data":[{"q":"คำถาม", "a":"คำตอบ"}]} เท่านั้น`;
+            else if (currentActionType === 'mocktest') prompt = `สร้างข้อสอบปรนัยเรื่อง "${txt}" 5 ข้อ ยากปานกลาง ขอเป็น JSON format: {"type":"mocktest", "topic":"${txt}", "data":[{"q":"โจทย์", "options":["A...","B...","C...","D..."], "correct":0, "explain":"เฉลย"}]} เท่านั้น`;
+            
+            sendMessage(prompt, showHidden, modalImg);
+            modalImg = null;
+        };
+
+        // --- CHAT ENGINE ---
+        const input = document.getElementById('userInput');
+        let currentImg = null;
+        function handleFile(e) { const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=(ev)=>{document.getElementById('filePreview').classList.remove('hidden'); document.getElementById('previewImg').src=ev.target.result; document.getElementById('fileName').innerText=f.name; currentImg=ev.target.result.split(',')[1];}; r.readAsDataURL(f); }
+        function clearFile() { currentImg=null; document.getElementById('fileInput').value=''; document.getElementById('filePreview').classList.add('hidden'); }
+
+        function explainTopic(topic) {
+            input.value = `ช่วยสอนและอธิบายเรื่อง "${topic}" ให้หน่อย เอาแบบเข้าใจง่ายๆ`;
+            sendMessage();
+        }
+
+        async function sendMessage(promptText=null, isHidden=false, imgOverride=null) {
+            const txt = promptText || input.value.trim();
+            const imgToSend = imgOverride || currentImg;
+            
+            if(!txt && !imgToSend) return;
+
+            if(!isHidden) { addMsg(txt, 'user', imgToSend); input.value=''; clearFile(); }
+            else addMsg(currentActionType==='mocktest' ? "กำลังออกข้อสอบ... 📝" : "กำลังประมวลผล...", 'ai');
+
+            const loadingId = addLoading();
+
+            try {
+                const parts = [{ text: `Role: AI Tutor. Format: Markdown. Commands (Strict JSON): 
+                1. MockTest -> {"type":"mocktest", "topic":"...", "data":[{"q":"...", "options":["..."], "correct":0, "explain":"..."}]}
+                2. Flashcard -> {"type":"flashcard", "data":[{"q":"...", "a":"..."}]}
+                3. Map -> {"type":"map", "subject":"...", "steps":["..."]}
+                Else: Markdown text.\nUser: ${txt}` }];
+                if(imgToSend) parts.push({ inlineData: { mimeType: "image/jpeg", data: imgToSend } });
+
+                const res = await fetch(API_URL + state.key, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ contents: [{ role: "user", parts }] }) });
+                const data = await res.json();
+                removeLoading(loadingId);
+                if(data.error) throw new Error(data.error.message);
+                
+                const reply = data.candidates[0].content.parts[0].text;
+                let jsonParsed = false;
+                try {
+                    const cleanReply = reply.replace(/```json/g, '').replace(/```/g, '').trim();
+                    const jsonMatch = cleanReply.match(/\{[\s\S]*\}/);
+                    if(jsonMatch) {
+                        const cmd = JSON.parse(jsonMatch[0]);
+                        if(cmd.type === 'map') { addPlan(cmd); addMsg(`✅ เพิ่มวิชา "${cmd.subject}" แล้ว`, 'ai'); jsonParsed=true; } 
+                        else if(cmd.type === 'flashcard' || cmd.type === 'mocktest') { renderTools(cmd); addMsg(`สร้างเรียบร้อย! ดูที่แถบขวา`, 'ai'); jsonParsed=true; }
+                    }
+                } catch(e) {}
+
+                if (!jsonParsed) addMsg(reply, 'ai');
+
+            } catch(e) {
+                removeLoading(loadingId);
+                let msg = e.message;
+                if(msg.includes('400')) { alert("Key ผิด"); localStorage.clear(); location.reload(); }
+                addMsg(`❌ Error: ${msg}`, 'ai');
+            }
+        }
+
+        // --- QUIZ LOGIC ---
+        function renderQuiz(cmd) {
+            currentQuizData = cmd;
+            const c = document.getElementById('active-tools-content');
+            document.getElementById('tools-placeholder').classList.add('hidden');
+            let html = `<div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100 mb-4 text-center"><h3 class="font-bold text-indigo-800 text-lg">${cmd.topic}</h3><p class="text-xs text-indigo-500">5 ข้อ • กดส่งเมื่อทำเสร็จ</p></div>`;
+            cmd.data.forEach((q, idx) => {
+                let opts = q.options.map((o, i) => `<label class="quiz-option group" id="opt-${idx}-${i}"><div class="flex items-center gap-3"><input type="radio" name="q-${idx}" value="${i}" class="w-4 h-4 text-blue-600"><span class="text-slate-700 group-hover:text-blue-700">${o}</span></div></label>`).join('');
+                html += `<div class="bg-white border border-gray-200 p-4 rounded-xl mb-4" id="q-box-${idx}"><p class="font-bold text-slate-800 mb-3 text-sm">${idx+1}. ${q.q}</p><div class="space-y-1">${opts}</div><div id="feedback-${idx}" class="hidden mt-3 p-3 bg-green-50 text-green-800 text-xs rounded-lg border border-green-200"></div></div>`;
+            });
+            html += `<div class="flex gap-2 mt-4 pb-10"><button onclick="submitQuiz()" id="btn-submit" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold shadow-md transition">ส่งคำตอบ 🏁</button><button onclick="retakeQuiz()" id="btn-retake" class="hidden flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-xl font-bold transition">ทำใหม่ 🔄</button></div>`;
+            c.innerHTML = html;
+            switchTab('tools');
+        }
+
+        function submitQuiz() {
+            if(!currentQuizData) return;
+            let score = 0; let total = currentQuizData.data.length; let feedbackSummary = [];
+            currentQuizData.data.forEach((q, idx) => {
+                const selected = document.querySelector(`input[name="q-${idx}"]:checked`);
+                const feedbackDiv = document.getElementById(`feedback-${idx}`);
+                document.querySelectorAll(`input[name="q-${idx}"]`).forEach(i => i.disabled = true);
+                if(selected) {
+                    const val = parseInt(selected.value);
+                    const label = document.getElementById(`opt-${idx}-${val}`);
+                    if(val === q.correct) { score++; label.classList.add('correct'); feedbackSummary.push(`ข้อ ${idx+1}: ถูกต้อง`); } 
+                    else { label.classList.add('wrong'); document.getElementById(`opt-${idx}-${q.correct}`).classList.add('correct'); feedbackSummary.push(`ข้อ ${idx+1}: ผิด`); }
+                } else { feedbackSummary.push(`ข้อ ${idx+1}: ไม่ได้ทำ`); document.getElementById(`opt-${idx}-${q.correct}`).classList.add('correct'); }
+                feedbackDiv.innerHTML = `<strong>เฉลย:</strong> ${q.explain}`; feedbackDiv.classList.remove('hidden');
+            });
+            document.getElementById('btn-submit').classList.add('hidden'); document.getElementById('btn-retake').classList.remove('hidden');
+            state.scores.unshift({ topic: currentQuizData.topic, score: score, total: total, date: new Date().toLocaleString('th-TH') });
+            localStorage.setItem("ed_scores", JSON.stringify(state.scores)); renderScores();
+            sendMessage(`ผลสอบ ${currentQuizData.topic}: ${score}/${total}. รายละเอียด: ${feedbackSummary.join(', ')}. วิเคราะห์ให้หน่อย`, true);
+        }
+        function retakeQuiz() { renderQuiz(currentQuizData); }
+        function renderScores() {
+            const c = document.getElementById('scores-list');
+            if(state.scores.length === 0) { document.getElementById('empty-scores').classList.remove('hidden'); return; }
+            document.getElementById('empty-scores').classList.add('hidden');
+            c.innerHTML = '';
+            state.scores.forEach(s => {
+                const p = (s.score / s.total) * 100;
+                let color = p >= 80 ? 'bg-green-500' : (p >= 50 ? 'bg-yellow-500' : 'bg-red-500');
+                c.innerHTML += `<div class="bg-white border border-slate-200 rounded-xl p-3 mb-2 shadow-sm flex justify-between items-center"><div><p class="font-bold text-slate-700 text-xs">${s.topic}</p><p class="text-[10px] text-slate-400">${s.date}</p></div><div class="${color} text-white px-2 py-1 rounded-lg font-bold text-xs">${s.score}/${s.total}</div></div>`;
+            });
+        }
+
+        // --- FLASHCARD ---
+        function renderFlashcard(cmd) {
+            const c = document.getElementById('active-tools-content');
+            document.getElementById('tools-placeholder').classList.add('hidden');
+            let html = '';
+            const deckId = Math.floor(Math.random()*1000);
+            cmd.data.forEach((x, i) => html += `<div class="tool-card flashcard"><p class="font-bold text-slate-800 mb-2 border-b pb-2 border-orange-100">${x.q}</p><div id="ans-${deckId}-${i}" style="display:none" class="text-blue-600 font-medium bg-blue-50 p-2 rounded animate-fade-in">${x.a}</div><button id="btn-${deckId}-${i}" onclick="toggleAnswer('${deckId}-${i}')" class="mt-2 text-xs font-bold text-orange-500 hover:text-orange-700 transition">👁️ เฉลย</button></div>`);
+            c.innerHTML = `<h4 class="font-bold text-orange-500 mb-2 text-sm uppercase">🗂️ Flashcards</h4>` + html + `<hr class="my-4">` + c.innerHTML;
+            switchTab('tools');
+        }
+        window.toggleAnswer = function(id) {
+            const ans = document.getElementById('ans-' + id); const btn = document.getElementById('btn-' + id);
+            if(ans.style.display === 'none') { ans.style.display = 'block'; btn.innerText = '🙈 ซ่อน'; } else { ans.style.display = 'none'; btn.innerText = '👁️ เฉลย'; }
+        };
+
+        // --- SIDEBAR ---
+        function addPlan(cmd) { state.plans.unshift(cmd); localStorage.setItem("ed_plans_v27", JSON.stringify(state.plans)); renderAllPlans(); }
+        function renderAllPlans() {
+            const c = document.getElementById('courses-container');
+            if(state.plans.length===0) { c.innerHTML = document.getElementById('empty-courses').outerHTML; document.getElementById('empty-courses').classList.remove('hidden'); return; }
+            let h = '';
+            state.plans.forEach((p, idx) => {
+                let steps = p.steps.map((s,i)=>`<div class="step-item" onclick="explainTopic('${s}')">${i+1}. ${s}</div>`).join('');
+                h += `<div class="course-card"><div class="course-header" onclick="toggleCourse(this)"><span>${p.subject}</span><i class="fas fa-chevron-down text-xs transition-transform"></i></div><div class="course-body">${steps}</div></div>`;
+            });
+            c.innerHTML = h;
+        }
+        function toggleCourse(el) {
+            el.classList.toggle('active');
+            el.nextElementSibling.classList.toggle('open');
+        }
+
+        // --- UTILS ---
+        function addMsg(text, sender, img) {
+            const div = document.createElement('div'); div.className = `flex gap-4 max-w-3xl mx-auto ${sender === 'user' ? 'flex-row-reverse' : ''} modal-enter mb-6`;
+            let content = "";
+            if(img) content += `<img src="data:image/jpeg;base64,${img}" class="max-w-[200px] rounded-lg mb-3 border shadow-sm">`;
+            content += marked.parse(text);
+            div.innerHTML = `<div class="w-10 h-10 rounded-full ${sender==='user'?'bg-blue-600 text-white':'bg-white border text-blue-600'} flex items-center justify-center shrink-0 shadow-sm"><i class="fas fa-${sender==='user'?'user':'robot'}"></i></div><div class="${sender==='user'?'chat-bubble-user':'chat-bubble-ai'} shadow-sm max-w-[85%] prose prose-sm">${content}</div>`;
+            document.getElementById('chatContainer').appendChild(div);
+            document.getElementById('chatContainer').scrollTop = 99999;
+        }
+        function addLoading() { const id=Date.now(); document.getElementById('chatContainer').insertAdjacentHTML('beforeend', `<div id="${id}" class="flex gap-4 max-w-3xl mx-auto"><div class="w-10 h-10 rounded-full bg-white border flex items-center justify-center"><i class="fas fa-robot text-blue-500"></i></div><div class="chat-bubble-ai p-4"><div class="w-2 h-2 bg-blue-400 rounded-full typing-dot"></div></div></div>`); document.getElementById('chatContainer').scrollTop=99999; return id; }
+        function removeLoading(id) { document.getElementById(id)?.remove(); }
+        function switchTab(t) {
+            ['tools','scores'].forEach(x => document.getElementById('tab-'+x).classList.add('hidden'));
+            document.getElementById('tab-'+t).classList.remove('hidden');
+            document.getElementById('btn-tools').className = "flex-1 py-3 text-sm font-medium text-slate-500";
+            document.getElementById('btn-scores').className = "flex-1 py-3 text-sm font-medium text-slate-500";
+            document.getElementById('btn-'+t).className = "flex-1 py-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600 bg-blue-50/50";
+        }
+        function setTone(t) { alert("Tone: "+t); }
+        input.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }});
+    </script>
+</body>
+</html>
